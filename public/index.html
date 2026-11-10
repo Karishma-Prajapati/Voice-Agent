@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BolBill</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f3f5f9;--ink:#14213d;--muted:#5b6785;--card:#fff;--line:#d9deea;--mic:#ffb400;--paid:#1f9d55;--wait:#2f6db5;--late:#d1383d}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1626;--ink:#eef1f8;--muted:#9aa6c4;--card:#18223a;--line:#2b3757}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Baloo 2",system-ui,"Noto Sans Devanagari",sans-serif;font-size:18px;line-height:1.35}
+main{max-width:560px;margin:0 auto;padding:20px 16px 48px}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px}
+h1{margin:0;font-size:34px;font-weight:800}
+select{font:inherit;padding:8px 10px;border-radius:12px;border:2px solid var(--line);background:var(--card);color:var(--ink)}
+.hero{text-align:center;padding:28px 0 8px}
+#mic{width:168px;height:168px;border-radius:50%;border:0;background:var(--mic);color:#14213d;font-size:64px;cursor:pointer;box-shadow:0 0 0 10px rgba(255,180,0,.25)}
+#mic:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{outline:4px solid var(--wait);outline-offset:3px}
+#mic.on{background:var(--late);color:#fff;animation:pulse 1.1s infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 22px rgba(209,56,61,.2)}}
+@media (prefers-reduced-motion:reduce){#mic.on{animation:none}}
+#status{min-height:56px;margin:14px 0 0;font-size:20px;font-weight:700}
+#heard{color:var(--muted);font-weight:500;font-size:17px;min-height:24px}
+.typebox{display:flex;gap:8px;margin-top:8px}
+.typebox input{flex:1;font:inherit;padding:10px 12px;border-radius:12px;border:2px solid var(--line);background:var(--card);color:var(--ink)}
+.typebox button{font:inherit;font-weight:700;padding:10px 16px;border-radius:12px;border:0;background:var(--ink);color:var(--bg);cursor:pointer}
+.review{background:var(--card);border:2px solid var(--line);border-radius:20px;padding:18px;margin-top:20px}
+.review h2{margin:0 0 4px;font-size:26px}
+.row{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid var(--line)}
+.total{font-size:30px;font-weight:800;margin-top:10px}
+.fx{color:var(--muted);font-size:16px;margin-top:4px}
+.warn{background:#fff3cd;color:#5c4400;border-radius:12px;padding:10px 12px;margin-top:10px;font-weight:700}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+.choices button{font:inherit;font-size:44px;font-weight:800;padding:14px;border:0;border-radius:18px;cursor:pointer;color:#fff}
+.choices small{display:block;font-size:17px}
+.yes{background:var(--paid)}.no{background:var(--late)}
+.choices button:disabled{opacity:.35;cursor:not-allowed}
+.done{background:var(--paid);color:#fff;border-radius:20px;padding:18px;margin-top:20px;text-align:center;font-size:24px;font-weight:800}
+h3{margin:34px 0 10px;font-size:24px}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.tile{border:0;border-radius:18px;padding:12px 6px;color:#fff;font:inherit;cursor:pointer;text-align:center}
+.tile b{display:block;font-size:34px;line-height:1}
+.tile span{font-size:15px}
+.tile[aria-pressed=true]{outline:4px solid var(--ink);outline-offset:2px}
+.t-paid{background:var(--paid)}.t-waiting{background:var(--wait)}.t-late{background:var(--late)}
+.list{margin-top:12px}
+.inv{background:var(--card);border:2px solid var(--line);border-radius:16px;padding:12px 14px;margin-bottom:8px}
+.inv .top{display:flex;justify-content:space-between;font-weight:700}
+.inv small{color:var(--muted)}
+.inv button{font:inherit;font-weight:700;margin-top:8px;padding:8px 14px;border:0;border-radius:12px;background:var(--mic);color:#14213d;cursor:pointer}
+.msg{background:var(--bg);border:2px dashed var(--line);border-radius:12px;padding:10px;margin-top:8px;font-weight:500}
+.empty{color:var(--muted);padding:8px 2px}
+.askbtn{font:inherit;font-size:22px;font-weight:800;width:100%;padding:16px;border:0;border-radius:18px;background:var(--wait);color:#fff;cursor:pointer}
+.askbtn.on{background:var(--late)}
+.hint{color:var(--muted);font-size:16px;margin:8px 0}
+.answer{background:var(--card);border:2px solid var(--wait);border-radius:16px;padding:14px;margin-top:10px;font-size:20px;font-weight:700}
+.answer button{font:inherit;font-weight:700;margin-top:8px;padding:6px 12px;border:0;border-radius:10px;background:var(--mic);color:#14213d;cursor:pointer}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>BolBill</h1>
+    <label>
+      <span hidden>Language</span>
+      <select id="lang" aria-label="Language">
+        <option value="hi-IN">हिन्दी</option>
+        <option value="en-IN">English</option>
+        <option value="mr-IN">मराठी</option>
+        <option value="ta-IN">தமிழ்</option>
+        <option value="bn-IN">বাংলা</option>
+      </select>
+    </label>
+  </header>
+
+  <section class="hero">
+    <button id="mic" aria-label="Tap and speak your bill">🎤</button>
+    <p id="status" aria-live="polite">Tap the microphone and say who to bill</p>
+    <p id="heard"></p>
+    <div class="typebox">
+      <input id="typed" placeholder="Or type here: Sharma, 3 rice, 100 rupees each" aria-label="Type your bill">
+      <button id="typeGo">Go</button>
+    </div>
+  </section>
+
+  <section id="review" class="review" hidden></section>
+  <section id="done" class="done" hidden></section>
+
+  <h3>Ask about my business</h3>
+  <button id="askMic" class="askbtn">🎙️ Ask a question</button>
+  <p class="hint">Try: "Who has not paid me?" · "How much did I earn?" · "Remind everyone who is late"</p>
+  <div class="typebox">
+    <input id="askTyped" placeholder="Or type your question" aria-label="Type your question">
+    <button id="askGo">Ask</button>
+  </div>
+  <div id="answer" class="answer" hidden></div>
+  <div id="remindBox" class="review" hidden></div>
+
+  <h3>My bills</h3>
+  <div class="tiles">
+    <button class="tile t-paid" data-b="paid" aria-pressed="false"><b id="c-paid">0</b><span>✅ Paid</span></button>
+    <button class="tile t-waiting" data-b="waiting" aria-pressed="true"><b id="c-waiting">0</b><span>⏳ Waiting</span></button>
+    <button class="tile t-late" data-b="late" aria-pressed="false"><b id="c-late">0</b><span>⚠️ Late</span></button>
+  </div>
+  <div id="list" class="list"></div>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null, listening = false, draft = null, bucket = 'waiting', invoices = [];
+
+const T = {
+  'hi-IN': {
+    ask: 'Boliye, kisko bill bhejna hai?',
+    read: d => `${d.name} ke liye ${d.total} dollar ka bill. ${d.days} din mein dena hai. Bhejun?`
+  },
+  'en-IN': {
+    ask: 'Speak now',
+    read: d => `Bill for ${d.name}, ${d.total} dollars, due in ${d.days} days. Send it?`
+  }
+};
+const tr = () => T[$('lang').value] || T['en-IN'];
+
+function setStatus(t){ $('status').textContent = t; }
+
+function speak(text){
+  if(!('speechSynthesis' in window)) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = T[$('lang').value] ? $('lang').value : 'en-IN';
+  speechSynthesis.speak(u);
+}
+
+/* ---------- Voice input ---------- */
+$('mic').addEventListener('click', () => {
+  if(!SR){ setStatus('Voice needs Chrome. Please type below.'); return; }
+  if(listening){ rec.stop(); return; }
+  rec = new SR();
+  rec.lang = $('lang').value;
+  rec.interimResults = true;
+  rec.continuous = false;
+  let finalText = '';
+  rec.onstart = () => { listening = true; $('mic').classList.add('on'); setStatus(tr().ask); $('heard').textContent = ''; };
+  rec.onresult = e => {
+    let t = '';
+    for(const r of e.results) t += r[0].transcript;
+    finalText = t; $('heard').textContent = t;
+  };
+  rec.onerror = e => setStatus(e.error === 'not-allowed' ? 'Please allow the microphone' : 'Could not hear. Tap and try again');
+  rec.onend = () => {
+    listening = false; $('mic').classList.remove('on');
+    if(finalText.trim()) parseText(finalText.trim());
+  };
+  rec.start();
+});
+
+$('typeGo').addEventListener('click', () => { const t = $('typed').value.trim(); if(t) parseText(t); });
+$('typed').addEventListener('keydown', e => { if(e.key === 'Enter') $('typeGo').click(); });
+
+/* ---------- Parse and review ---------- */
+async function parseText(text){
+  $('done').hidden = true;
+  setStatus('Reading your bill…');
+  try{
+    const res = await fetch('/api/parse', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({text})});
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error || 'Parse failed');
+    showReview(data);
+  }catch(e){
+    setStatus('Something went wrong. Please try again.');
+    console.error(e);
+  }
+}
+
+function showReview({parsed, customer, fx, warnings = []}){
+  const items = parsed.items || [];
+  const complete = items.length && items.every(i => i.name && i.quantity > 0 && i.price > 0);
+  const total = items.reduce((s,i) => s + (i.quantity||0)*(i.price||0), 0);
+  draft = { parsed, customer, items, fx, warnings, total: +total.toFixed(2), complete };
+
+  const box = $('review');
+  box.innerHTML = '';
+  const h = document.createElement('h2');
+  h.textContent = customer ? `${customer.firstName} ${customer.lastName}` : (parsed.customer_name || 'Unknown customer');
+  box.appendChild(h);
+
+  items.forEach(i => {
+    const r = document.createElement('div'); r.className = 'row';
+    const a = document.createElement('span');
+    const b = document.createElement('span');
+    if(i.origPrice != null){
+      a.textContent = `${i.baseName || i.name} × ${i.origQty} @ ₹${i.origPrice}`;
+      b.textContent = `₹${Math.round(i.origQty*i.origPrice)} → $${((i.quantity||0)*(i.price||0)).toFixed(2)}`;
+    }else{
+      a.textContent = `${i.name || '?'} × ${i.quantity ?? '?'}`;
+      b.textContent = `$${((i.quantity||0)*(i.price||0)).toFixed(2)}`;
+    }
+    r.append(a,b); box.appendChild(r);
+  });
+
+  const tot = document.createElement('div'); tot.className = 'total'; tot.textContent = `Total $${draft.total.toFixed(2)}`;
+  const due = document.createElement('div'); due.textContent = `Pay within ${parsed.due_in_days || 7} days`;
+  box.append(tot, due);
+
+  if(fx){
+    const f = document.createElement('div'); f.className = 'fx';
+    f.textContent = `₹${Math.round(fx.originalTotal).toLocaleString('en-IN')} at ₹${fx.rate.toFixed(2)} per $1 (${fx.source})`;
+    box.appendChild(f);
+  }
+  warnings.forEach(w => {
+    const x = document.createElement('div'); x.className = 'warn'; x.textContent = '⚠️ ' + w; box.appendChild(x);
+  });
+
+  let problem = '';
+  if(!customer) problem = 'This customer is not in your contacts. Say the name again.';
+  else if(!complete) problem = 'Some details are missing. Say the items and prices again.';
+  if(problem){ const w = document.createElement('div'); w.className = 'warn'; w.textContent = problem; box.appendChild(w); }
+
+  const c = document.createElement('div'); c.className = 'choices';
+  c.innerHTML = '<button class="yes" id="yes" aria-label="Send bill">✔<small>' + (warnings.length ? 'Send anyway' : 'Send') + '</small></button><button class="no" id="no" aria-label="Cancel">✘<small>Cancel</small></button>';
+  box.appendChild(c);
+  box.hidden = false;
+
+  $('yes').disabled = !!problem;
+  $('yes').onclick = sendInvoice;
+  $('no').onclick = () => { box.hidden = true; draft = null; speechSynthesis.cancel(); setStatus('Cancelled. Tap the microphone to start again'); };
+
+  if(problem){ setStatus(problem); speak(problem); }
+  else{
+    const name = customer.firstName ? `${customer.firstName} ${customer.lastName}` : parsed.customer_name;
+    const line = tr().read({name, total: draft.total, days: parsed.due_in_days || 7});
+    setStatus(warnings.length ? 'Warning! Check the bill carefully' : 'Check the bill, then tap ✔ or ✘');
+    speak(warnings.length ? line + ' Warning. ' + warnings.join(' ') : line);
+  }
+}
+
+/* ---------- Send ---------- */
+async function sendInvoice(){
+  if(!draft) return;
+  speechSynthesis.cancel();
+  $('yes').disabled = true; setStatus('Sending the bill…');
+  try{
+    const { customer, items, parsed } = draft;
+    const res = await fetch('/api/invoice/send', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
+      customer:{ firstName:customer.firstName, lastName:customer.lastName, email:customer.email },
+      items, dueInDays: parsed.due_in_days || 7, language: parsed.language || 'English',
+      acknowledged: draft.warnings.length > 0, fx: draft.fx
+    })});
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error || 'Send failed');
+    $('review').hidden = true;
+    $('done').textContent = `✅ Bill sent · $${data.total.toFixed(2)}`;
+    $('done').hidden = false;
+    setStatus('Tap the microphone for the next bill');
+    speak(tr() === T['hi-IN'] ? 'Bill bhej diya gaya' : 'Bill sent');
+    draft = null; $('typed').value = '';
+    loadInvoices();
+  }catch(e){
+    $('yes').disabled = false;
+    setStatus('Could not send. Tap ✔ to try again');
+    console.error(e);
+  }
+}
+
+/* ---------- Dashboard ---------- */
+async function loadInvoices(){
+  try{
+    const res = await fetch('/api/invoices');
+    invoices = await res.json();
+    renderList();
+  }catch(e){ console.error(e); }
+}
+
+document.querySelectorAll('.tile').forEach(t => t.addEventListener('click', () => {
+  bucket = t.dataset.b;
+  document.querySelectorAll('.tile').forEach(x => x.setAttribute('aria-pressed', x === t));
+  renderList();
+}));
+
+function renderList(){
+  ['paid','waiting','late'].forEach(b => $('c-' + b).textContent = invoices.filter(i => i.bucket === b).length);
+  const box = $('list'); box.innerHTML = '';
+  const shown = invoices.filter(i => i.bucket === bucket);
+  if(!shown.length){ const e = document.createElement('div'); e.className = 'empty'; e.textContent = 'No bills here yet'; box.appendChild(e); return; }
+  shown.forEach(inv => {
+    const d = document.createElement('div'); d.className = 'inv';
+    const top = document.createElement('div'); top.className = 'top';
+    const n = document.createElement('span'); n.textContent = inv.customerName;
+    const a = document.createElement('span');
+    a.textContent = `$${inv.total.toFixed(2)}${inv.inrTotal ? ' (₹' + Math.round(inv.inrTotal).toLocaleString('en-IN') + ')' : ''}`;
+    top.append(n,a);
+    const s = document.createElement('small'); s.textContent = `Due ${inv.dueDate}`;
+    d.append(top, s);
+    if(inv.bucket === 'late'){
+      const b = document.createElement('button'); b.textContent = '💬 Write reminder';
+      b.onclick = () => remind(inv, d, b);
+      d.appendChild(b);
+    }
+    if(inv.bucket !== 'paid'){
+      const pb = document.createElement('button'); pb.textContent = '💵 Mark as paid'; pb.style.marginLeft = '8px';
+      let armed = false;
+      pb.onclick = () => {
+        if(!armed){ armed = true; pb.textContent = '✔ Tap again to confirm'; setTimeout(() => { armed = false; pb.textContent = '💵 Mark as paid'; }, 4000); return; }
+        markPaid(inv.id);
+      };
+      d.appendChild(pb);
+    }
+    box.appendChild(d);
+  });
+}
+
+async function remind(inv, card, btn){
+  btn.disabled = true; btn.textContent = 'Writing…';
+  try{
+    const res = await fetch('/api/reminder/' + encodeURIComponent(inv.id), {method:'POST'});
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error);
+    const m = document.createElement('div'); m.className = 'msg'; m.textContent = data.message;
+    const sp = document.createElement('button'); sp.textContent = '🔊 Listen';
+    sp.onclick = () => speak(data.message);
+    card.append(m, sp);
+    btn.remove();
+  }catch(e){ btn.disabled = false; btn.textContent = '💬 Write reminder'; console.error(e); }
+}
+
+/* ---------- Ask the business ---------- */
+function showAnswer(text){
+  const a = $('answer'); a.innerHTML = '';
+  const p = document.createElement('div'); p.textContent = text;
+  const b = document.createElement('button'); b.textContent = '🔊 Listen'; b.onclick = () => speak(text);
+  a.append(p, b); a.hidden = false;
+}
+
+async function askBusiness(text){
+  $('remindBox').hidden = true;
+  showAnswer('Thinking…');
+  try{
+    const res = await fetch('/api/ask', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({text})});
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error || 'Ask failed');
+    showAnswer(data.answer); speak(data.answer);
+    if(data.reminders && data.reminders.length) showReminders(data.reminders);
+    if(data.payment) showPayment(data.payment);
+  }catch(e){ showAnswer('Something went wrong. Please try again.'); console.error(e); }
+}
+
+function showReminders(list){
+  const box = $('remindBox'); box.innerHTML = '';
+  const h = document.createElement('h2'); h.textContent = `Send ${list.length} reminder${list.length > 1 ? 's' : ''}?`;
+  box.appendChild(h);
+  list.forEach(r => {
+    const d = document.createElement('div'); d.className = 'row';
+    const n = document.createElement('b'); n.textContent = r.customer;
+    const m = document.createElement('span'); m.textContent = r.message;
+    d.style.flexDirection = 'column'; d.append(n, m); box.appendChild(d);
+  });
+  const c = document.createElement('div'); c.className = 'choices';
+  c.innerHTML = '<button class="yes" id="rYes" aria-label="Send reminders">✔<small>Send</small></button><button class="no" id="rNo" aria-label="Cancel">✘<small>Cancel</small></button>';
+  box.appendChild(c); box.hidden = false;
+  $('rNo').onclick = () => { box.hidden = true; };
+  $('rYes').onclick = async () => {
+    $('rYes').disabled = true;
+    try{
+      const res = await fetch('/api/remind/send', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({reminders: list})});
+      const { results } = await res.json();
+      const ok = results.filter(x => x.ok).length;
+      box.hidden = true;
+      const msg = ok === results.length ? `✅ ${ok} reminder${ok > 1 ? 's' : ''} sent` : `Sent ${ok} of ${results.length}. ${results.find(x => !x.ok).error}`;
+      showAnswer(msg); speak(ok === results.length ? 'Reminders sent' : 'Some reminders failed');
+    }catch(e){ $('rYes').disabled = false; console.error(e); }
+  };
+}
+
+async function markPaid(id){
+  try{
+    const res = await fetch('/api/invoice/' + encodeURIComponent(id) + '/paid', {method:'POST'});
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error || 'Failed');
+    showAnswer('✅ Marked as paid'); speak(tr() === T['hi-IN'] ? 'Payment darj ho gaya' : 'Marked as paid');
+    loadInvoices();
+  }catch(e){ showAnswer('Could not mark as paid. ' + e.message); console.error(e); }
+}
+
+function showPayment(p){
+  const box = $('remindBox'); box.innerHTML = '';
+  const h = document.createElement('h2'); h.textContent = `Mark ${p.customer}'s $${p.total.toFixed(2)} bill as paid?`;
+  box.appendChild(h);
+  const c = document.createElement('div'); c.className = 'choices';
+  c.innerHTML = '<button class="yes" id="pYes" aria-label="Mark as paid">✔<small>Yes, paid</small></button><button class="no" id="pNo" aria-label="Cancel">✘<small>Cancel</small></button>';
+  box.appendChild(c); box.hidden = false;
+  $('pNo').onclick = () => { box.hidden = true; };
+  $('pYes').onclick = () => { box.hidden = true; markPaid(p.id); };
+}
+
+$('askMic').addEventListener('click', () => {
+  if(!SR){ showAnswer('Voice needs Chrome. Please type below.'); return; }
+  const r = new SR(); r.lang = $('lang').value; r.interimResults = false;
+  let text = '';
+  r.onstart = () => { $('askMic').classList.add('on'); $('askMic').textContent = '🔴 Listening…'; };
+  r.onresult = e => { text = Array.from(e.results).map(x => x[0].transcript).join(' '); };
+  r.onerror = () => showAnswer('Could not hear. Tap and try again');
+  r.onend = () => { $('askMic').classList.remove('on'); $('askMic').textContent = '🎙️ Ask a question'; if(text.trim()) askBusiness(text.trim()); };
+  r.start();
+});
+$('askGo').addEventListener('click', () => { const t = $('askTyped').value.trim(); if(t) askBusiness(t); });
+$('askTyped').addEventListener('keydown', e => { if(e.key === 'Enter') $('askGo').click(); });
+
+/* Demo helper: open the page with ?demo=1 to show a button that backdates the latest bill */
+if(location.search.includes('demo=1')){
+  const d = document.createElement('button');
+  d.textContent = 'Demo: make latest bill late';
+  d.style.cssText = 'margin-top:24px;padding:8px 12px;border-radius:10px;border:2px dashed var(--line);background:transparent;color:var(--muted);cursor:pointer';
+  d.onclick = async () => { await fetch('/api/demo/make-late', {method:'POST'}); loadInvoices(); };
+  document.querySelector('main').appendChild(d);
+}
+
+loadInvoices();
+setInterval(loadInvoices, 15000);
+</script>
+</body>
+</html>
