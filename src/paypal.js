@@ -94,3 +94,7 @@ export async function recordPayment(id, amount, currency = 'USD') {
     }),
   });
 }
+export async function listPayPalInvoices() {
+  const data = await paypal('/v2/invoicing/invoices?page=1&page_size=100');
+  return data.items || [];
+}

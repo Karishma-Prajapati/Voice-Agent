@@ -2,69 +2,185 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>BolBill</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#0B1B45">
+<title>BolBill: say the bill, get paid</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Hind:wght@400;500;600;700&family=Noto+Sans+Tamil:wght@500;700&family=Noto+Sans+Bengali:wght@500;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#f3f5f9;--ink:#14213d;--muted:#5b6785;--card:#fff;--line:#d9deea;--mic:#ffb400;--paid:#1f9d55;--wait:#2f6db5;--late:#d1383d}
-@media (prefers-color-scheme:dark){:root{--bg:#0f1626;--ink:#eef1f8;--muted:#9aa6c4;--card:#18223a;--line:#2b3757}}
+:root{
+  --bg:#F2F5FC;--surface:#fff;--ink:#0B1B45;--muted:#55618A;--line:#DFE5F3;
+  --stage:#0B1B45;--blue:#1D63E8;--mic:#FFB400;
+  --paid:#0E8F4F;--wait:#1D63E8;--late:#D6313A;
+  --paid-soft:#E2F5EA;--wait-soft:#E5EDFF;--late-soft:#FDE7E9;
+  --paid-ink:#0A6B3A;--wait-ink:#1550BE;--late-ink:#A5202A;
+  --warn-bg:#FFF3CF;--warn-ink:#5A4300;
+  --shadow:0 1px 2px rgba(11,27,69,.06),0 12px 28px -16px rgba(11,27,69,.25);
+  --display:"Baloo 2","Noto Sans Devanagari","Noto Sans Tamil","Noto Sans Bengali",system-ui,sans-serif;
+  --body:"Hind","Noto Sans Devanagari","Noto Sans Tamil","Noto Sans Bengali",system-ui,sans-serif;
+  --spk:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 9.5v5h4l5 4v-13l-5 4z' fill='black'/%3E%3Cpath d='M16.5 9a4.5 4.5 0 0 1 0 6M19 6.5a8 8 0 0 1 0 11'/%3E%3C/svg%3E");
+  --alert:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3.5l9.5 16.5h-19z'/%3E%3Cpath d='M12 10v4.5M12 17.5v.1'/%3E%3C/svg%3E");
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#070E22;--surface:#111C3B;--ink:#EEF2FC;--muted:#A3AFD0;--line:#25335F;
+    --stage:#13245A;--blue:#3B7BFF;
+    --paid-soft:#0F3A2A;--wait-soft:#14285A;--late-soft:#3F1A22;
+    --paid-ink:#5FE0A3;--wait-ink:#9CBEFF;--late-ink:#FF9AA1;
+    --warn-bg:#3A2F0B;--warn-ink:#FFE08A;
+    --shadow:0 12px 28px -16px rgba(0,0,0,.6);
+  }
+}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:"Baloo 2",system-ui,"Noto Sans Devanagari",sans-serif;font-size:18px;line-height:1.35}
-main{max-width:560px;margin:0 auto;padding:20px 16px 48px}
-header{display:flex;justify-content:space-between;align-items:center;gap:12px}
-h1{margin:0;font-size:34px;font-weight:800}
-select{font:inherit;padding:8px 10px;border-radius:12px;border:2px solid var(--line);background:var(--card);color:var(--ink)}
-.hero{text-align:center;padding:28px 0 8px}
-#mic{width:168px;height:168px;border-radius:50%;border:0;background:var(--mic);color:#14213d;font-size:64px;cursor:pointer;box-shadow:0 0 0 10px rgba(255,180,0,.25)}
-#mic:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{outline:4px solid var(--wait);outline-offset:3px}
-#mic.on{background:var(--late);color:#fff;animation:pulse 1.1s infinite}
-@keyframes pulse{50%{box-shadow:0 0 0 22px rgba(209,56,61,.2)}}
-@media (prefers-reduced-motion:reduce){#mic.on{animation:none}}
-#status{min-height:56px;margin:14px 0 0;font-size:20px;font-weight:700}
-#heard{color:var(--muted);font-weight:500;font-size:17px;min-height:24px}
-.typebox{display:flex;gap:8px;margin-top:8px}
-.typebox input{flex:1;font:inherit;padding:10px 12px;border-radius:12px;border:2px solid var(--line);background:var(--card);color:var(--ink)}
-.typebox button{font:inherit;font-weight:700;padding:10px 16px;border-radius:12px;border:0;background:var(--ink);color:var(--bg);cursor:pointer}
-.review{background:var(--card);border:2px solid var(--line);border-radius:20px;padding:18px;margin-top:20px}
-.review h2{margin:0 0 4px;font-size:26px}
-.row{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid var(--line)}
-.total{font-size:30px;font-weight:800;margin-top:10px}
-.fx{color:var(--muted);font-size:16px;margin-top:4px}
-.warn{background:#fff3cd;color:#5c4400;border-radius:12px;padding:10px 12px;margin-top:10px;font-weight:700}
-.choices{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
-.choices button{font:inherit;font-size:44px;font-weight:800;padding:14px;border:0;border-radius:18px;cursor:pointer;color:#fff}
-.choices small{display:block;font-size:17px}
-.yes{background:var(--paid)}.no{background:var(--late)}
-.choices button:disabled{opacity:.35;cursor:not-allowed}
-.done{background:var(--paid);color:#fff;border-radius:20px;padding:18px;margin-top:20px;text-align:center;font-size:24px;font-weight:800}
-h3{margin:34px 0 10px;font-size:24px}
-.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.tile{border:0;border-radius:18px;padding:12px 6px;color:#fff;font:inherit;cursor:pointer;text-align:center}
-.tile b{display:block;font-size:34px;line-height:1}
-.tile span{font-size:15px}
-.tile[aria-pressed=true]{outline:4px solid var(--ink);outline-offset:2px}
-.t-paid{background:var(--paid)}.t-waiting{background:var(--wait)}.t-late{background:var(--late)}
-.list{margin-top:12px}
-.inv{background:var(--card);border:2px solid var(--line);border-radius:16px;padding:12px 14px;margin-bottom:8px}
-.inv .top{display:flex;justify-content:space-between;font-weight:700}
-.inv small{color:var(--muted)}
-.inv button{font:inherit;font-weight:700;margin-top:8px;padding:8px 14px;border:0;border-radius:12px;background:var(--mic);color:#14213d;cursor:pointer}
-.msg{background:var(--bg);border:2px dashed var(--line);border-radius:12px;padding:10px;margin-top:8px;font-weight:500}
-.empty{color:var(--muted);padding:8px 2px}
-.askbtn{font:inherit;font-size:22px;font-weight:800;width:100%;padding:16px;border:0;border-radius:18px;background:var(--wait);color:#fff;cursor:pointer}
-.askbtn.on{background:var(--late)}
-.hint{color:var(--muted);font-size:16px;margin:8px 0}
-.answer{background:var(--card);border:2px solid var(--wait);border-radius:16px;padding:14px;margin-top:10px;font-size:20px;font-weight:700}
-.answer button{font:inherit;font-weight:700;margin-top:8px;padding:6px 12px;border:0;border-radius:10px;background:var(--mic);color:#14213d;cursor:pointer}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.45}
+button,input,select{font:inherit}
+button{cursor:pointer}
 [hidden]{display:none!important}
+:focus-visible{outline:3px solid #7FB0FF;outline-offset:3px}
+
+.app{max-width:1080px;margin:0 auto;padding:16px 16px 40px}
+.grid{max-width:600px;margin:0 auto}
+@media (min-width:940px){
+  .app{padding:24px 28px 48px}
+  .grid{max-width:none;display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:28px;align-items:start}
+}
+
+/* ---------- Header ---------- */
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;max-width:600px;margin:0 auto 16px}
+@media (min-width:940px){.top{max-width:none;margin-bottom:22px}}
+.brand{display:flex;align-items:center;gap:10px}
+.logo{width:42px;height:42px;display:block}
+.brand b{font-family:var(--display);font-weight:800;font-size:30px;line-height:1;letter-spacing:-.01em}
+.langwrap select{appearance:auto;min-height:46px;padding:0 14px;border-radius:999px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);font-weight:600}
+
+/* ---------- Voice stage ---------- */
+.stage{position:relative;overflow:hidden;background:var(--stage);color:#fff;border-radius:28px;padding:30px 18px 22px;text-align:center}
+.stage h1{margin:0;font-family:var(--display);font-weight:800;font-size:clamp(32px,8vw,42px);line-height:1.05;letter-spacing:-.01em}
+.stage .hi{margin:6px 0 0;color:#FFD466;font-family:var(--display);font-weight:600;font-size:21px}
+.mic-wrap{position:relative;display:grid;place-items:center;height:240px;margin-top:10px}
+#mic{position:relative;z-index:1;width:150px;height:150px;border-radius:50%;border:0;background:var(--mic);color:#0B1B45;display:grid;place-items:center;
+  box-shadow:0 0 0 10px rgba(255,180,0,.22),0 20px 40px -12px rgba(0,0,0,.55);transition:transform .15s,background .2s,box-shadow .2s}
+#mic:active{transform:scale(.96)}
+#mic.on{background:var(--late);color:#fff;box-shadow:0 0 0 10px rgba(214,49,58,.32),0 20px 40px -12px rgba(0,0,0,.55)}
+.ring{position:absolute;left:50%;top:50%;width:var(--s);height:var(--s);margin:calc(var(--s) / -2) 0 0 calc(var(--s) / -2);border-radius:50%;border:1.5px solid rgba(255,255,255,.3);pointer-events:none;animation:ripple 4.2s ease-out infinite}
+.r1{--s:200px}.r2{--s:270px;animation-delay:1.4s}.r3{--s:340px;animation-delay:2.8s}
+#mic.on ~ .ring{animation-duration:1.5s;border-color:rgba(255,130,138,.6)}
+#mic.on ~ .r2{animation-delay:.5s}#mic.on ~ .r3{animation-delay:1s}
+@keyframes ripple{0%{transform:scale(.8);opacity:0}25%{opacity:1}100%{transform:scale(1.12);opacity:0}}
+#status{margin:4px auto 0;max-width:30ch;min-height:58px;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:700;font-size:22px;line-height:1.25}
+#heard{margin:10px auto 0;padding:10px 16px;border-radius:16px;background:rgba(255,255,255,.1);font-size:18px;max-width:100%}
+#heard:empty{display:none}
+#heard:not(:empty)::before{content:"\201C"}
+#heard:not(:empty)::after{content:"\201D"}
+
+.typebox{display:flex;gap:8px;margin-top:16px}
+.typebox input{flex:1;min-width:0;height:52px;padding:0 16px;border-radius:16px;border:2px solid transparent;background:#fff;color:#0B1B45}
+.typebox input::placeholder{color:#6A7699}
+.typebox button{height:52px;padding:0 22px;border:0;border-radius:16px;background:var(--blue);color:#fff;font-weight:700}
+.stage .typebox input:focus-visible{outline-color:#FFD466}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;justify-content:center}
+.chip{min-height:38px;padding:0 14px;border-radius:999px;border:1px solid rgba(255,255,255,.3);background:transparent;color:#fff;font-size:15px}
+
+/* ---------- Receipt (review) ---------- */
+.receipt{position:relative;background:var(--surface);border-radius:24px 24px 0 0;padding:22px 20px 26px;margin:22px 0 26px;filter:drop-shadow(0 12px 18px rgba(11,27,69,.18))}
+.receipt::after{content:"";position:absolute;left:0;right:0;top:100%;height:10px;background:radial-gradient(circle at 50% 0,var(--surface) 6px,transparent 6.6px) 0 0/14px 10px repeat-x}
+.receipt h2,.panel h2{margin:0 0 4px;font-family:var(--display);font-weight:800;font-size:28px;line-height:1.15}
+.row{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px dashed var(--line);font-size:18px}
+.row span:last-child{font-variant-numeric:tabular-nums;font-weight:600;text-align:right}
+.totalrow{display:flex;justify-content:space-between;align-items:baseline;margin-top:16px}
+.totalrow span{color:var(--muted);font-weight:600}
+.totalrow strong{font-family:var(--display);font-weight:800;font-size:44px;line-height:1;font-variant-numeric:tabular-nums}
+.due{margin-top:6px;color:var(--muted);font-size:16px;text-align:right}
+.fx{margin-top:4px;color:var(--muted);font-size:15px;text-align:right}
+.warn{display:flex;gap:10px;align-items:flex-start;margin-top:12px;padding:10px 12px;border-radius:14px;background:var(--warn-bg);color:var(--warn-ink);font-weight:600;font-size:16px}
+.warn::before{content:"";flex:none;width:20px;height:20px;margin-top:2px;background:currentColor;-webkit-mask:var(--alert) center/contain no-repeat;mask:var(--alert) center/contain no-repeat}
+.choices{display:grid;grid-template-columns:1.5fr 1fr;gap:12px;margin-top:18px}
+.choices button{display:flex;align-items:center;justify-content:center;gap:10px;min-height:64px;border-radius:18px;font-family:var(--display);font-size:22px;font-weight:700;border:0}
+.choices .yes{background:var(--paid);color:#fff}
+.choices .no{background:transparent;color:var(--late-ink);border:2px solid var(--late)}
+.choices button:disabled{opacity:.35;cursor:not-allowed}
+
+.done{display:flex;align-items:center;gap:14px;margin:22px 0 4px;padding:18px 20px;border-radius:24px;background:var(--paid);color:#fff}
+.done svg{flex:none}
+.done strong{display:block;font-family:var(--display);font-weight:800;font-size:26px;line-height:1.1}
+.done span{font-size:17px}
+.tick path{stroke-dasharray:30;stroke-dashoffset:30;animation:draw .5s .1s ease-out forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+
+/* ---------- Panels ---------- */
+.panel{margin-top:22px;padding:20px;border-radius:24px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow)}
+.desk .panel:first-child{margin-top:0}
+.panel .sub{margin:0 0 14px;color:var(--muted);font-size:16px}
+.askbtn{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;min-height:64px;border:0;border-radius:18px;background:var(--blue);color:#fff;font-family:var(--display);font-weight:700;font-size:22px}
+.askbtn.on{background:var(--late)}
+.panel .chips{justify-content:flex-start;margin-top:14px}
+.panel .chip{border-color:var(--line);background:var(--bg);color:var(--ink)}
+.panel .typebox input{background:var(--bg);border-color:var(--line);color:var(--ink)}
+.panel .typebox input::placeholder{color:var(--muted)}
+.panel .typebox button{background:var(--ink);color:var(--surface)}
+.answer{margin-top:14px;padding:14px 16px;border-radius:16px;border-left:5px solid var(--wait);background:var(--wait-soft);font-size:19px;font-weight:600}
+#remindBox{margin-top:16px;border-color:var(--wait)}
+#remindBox .row{flex-direction:column;gap:2px}
+
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0 16px}
+.stat{padding:12px 14px;border-radius:16px;background:var(--bg)}
+.stat small{display:block;color:var(--muted);font-size:14px}
+.stat strong{font-family:var(--display);font-weight:800;font-size:25px;line-height:1.2;font-variant-numeric:tabular-nums}
+.stat.owed strong{color:var(--wait-ink)}
+.stat.got strong{color:var(--paid-ink)}
+
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tile{min-height:76px;padding:10px 6px 8px;border-radius:16px;border:2px solid var(--line);background:var(--surface);color:var(--ink);text-align:center;transition:background .15s,color .15s,border-color .15s}
+.tile b{display:block;font-family:var(--display);font-weight:800;font-size:30px;line-height:1}
+.tile span{display:inline-flex;align-items:center;gap:6px;font-size:15px;font-weight:600}
+.tile span::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--c)}
+.t-paid{--c:var(--paid)}.t-waiting{--c:var(--wait)}.t-late{--c:var(--late)}
+.tile[aria-pressed=true]{background:var(--c);border-color:var(--c);color:#fff}
+.tile[aria-pressed=true] span::before{background:#fff}
+
+.list{margin-top:14px}
+.inv{display:grid;grid-template-columns:auto 1fr auto;gap:4px 12px;align-items:center;margin-bottom:10px;padding:12px 14px;border-radius:16px;border:1px solid var(--line);border-left:5px solid var(--c);background:var(--surface)}
+.b-paid{--c:var(--paid);--soft:var(--paid-soft);--cink:var(--paid-ink)}
+.b-waiting{--c:var(--wait);--soft:var(--wait-soft);--cink:var(--wait-ink)}
+.b-late{--c:var(--late);--soft:var(--late-soft);--cink:var(--late-ink)}
+.av{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:var(--soft);color:var(--cink);font-family:var(--display);font-weight:800;font-size:21px}
+.info b{display:block;font-size:18px;line-height:1.2;font-weight:700}
+.info small{color:var(--muted);font-size:14px}
+.amt{text-align:right}
+.amt strong{display:block;font-family:var(--display);font-weight:800;font-size:22px;line-height:1.1;font-variant-numeric:tabular-nums}
+.amt small{color:var(--muted);font-size:14px}
+.acts{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.pill{display:inline-flex;align-items:center;gap:8px;min-height:42px;padding:0 16px;border-radius:999px;border:2px solid transparent;font-weight:600}
+.pill.remind{background:var(--mic);color:#0B1B45}
+.pill.paid{background:transparent;border-color:var(--paid);color:var(--paid-ink)}
+.pill.paid.armed{background:var(--paid);color:#fff}
+.pill:disabled{opacity:.5;cursor:not-allowed}
+.pill.listen{background:var(--ink);color:var(--surface);margin-top:10px}
+.pill.listen::before{content:"";width:18px;height:18px;background:currentColor;-webkit-mask:var(--spk) center/contain no-repeat;mask:var(--spk) center/contain no-repeat}
+.inv .listen{margin-top:0;grid-column:1/-1;justify-self:start}
+.msg{grid-column:1/-1;margin-top:6px;padding:10px 12px;border-radius:12px;border:2px dashed var(--line);background:var(--bg)}
+.empty{padding:18px 8px;color:var(--muted);text-align:center}
+
+.foot{margin-top:28px;text-align:center;color:var(--muted);font-size:15px}
+@media (prefers-reduced-motion:reduce){
+  .ring{animation:none;opacity:.6}
+  .tick path{animation:none;stroke-dashoffset:0}
+  #mic,.tile{transition:none}
+}
 </style>
 </head>
 <body>
-<main>
-  <header>
-    <h1>BolBill</h1>
-    <label>
+<main class="app">
+  <header class="top">
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="12" fill="#0B1B45" stroke="#2B3C7A"/><g fill="#FFB400"><rect x="9" y="16" width="4" height="8" rx="2"/><rect x="15.5" y="10" width="4" height="20" rx="2"/><rect x="22" y="13" width="4" height="14" rx="2"/><rect x="28.5" y="18" width="4" height="4" rx="2"/></g></svg>
+      <b>BolBill</b>
+    </div>
+    <label class="langwrap">
       <span hidden>Language</span>
       <select id="lang" aria-label="Language">
         <option value="hi-IN">हिन्दी</option>
@@ -76,42 +192,84 @@ h3{margin:34px 0 10px;font-size:24px}
     </label>
   </header>
 
-  <section class="hero">
-    <button id="mic" aria-label="Tap and speak your bill">🎤</button>
-    <p id="status" aria-live="polite">Tap the microphone and say who to bill</p>
-    <p id="heard"></p>
-    <div class="typebox">
-      <input id="typed" placeholder="Or type here: Sharma, 3 rice, 100 rupees each" aria-label="Type your bill">
-      <button id="typeGo">Go</button>
+  <div class="grid">
+    <div class="studio">
+      <section class="stage">
+        <h1>Say the bill. We send it.</h1>
+        <p class="hi" lang="hi">बोलो, बिल भेजो</p>
+        <div class="mic-wrap">
+          <button id="mic" aria-label="Tap and speak your bill">
+            <svg viewBox="0 0 24 24" width="72" height="72" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2.5" width="6" height="12" rx="3" fill="currentColor"/><path d="M5 11.5a7 7 0 0 0 14 0"/><path d="M12 18.5V22"/></svg>
+          </button>
+          <span class="ring r1"></span><span class="ring r2"></span><span class="ring r3"></span>
+        </div>
+        <p id="status" aria-live="polite">Tap the microphone and say who to bill</p>
+        <p id="heard"></p>
+        <div class="typebox">
+          <input id="typed" placeholder="Or type: Sharma, 3 rice, 100 rupees each" aria-label="Type your bill">
+          <button id="typeGo">Go</button>
+        </div>
+        <div class="chips">
+          <button class="chip" data-fill="Sharma, 3 rice, 100 rupees each">Sharma, 3 rice, 100 rupees each</button>
+        </div>
+      </section>
+
+      <section id="review" class="receipt" hidden></section>
+      <section id="done" class="done" hidden></section>
     </div>
-  </section>
 
-  <section id="review" class="review" hidden></section>
-  <section id="done" class="done" hidden></section>
+    <div class="desk">
+      <section class="panel">
+        <h2>Ask about your business</h2>
+        <p class="sub">Speak or type a question. The answer is read out loud.</p>
+        <button id="askMic" class="askbtn">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2.5" width="6" height="12" rx="3" fill="currentColor"/><path d="M5 11.5a7 7 0 0 0 14 0"/><path d="M12 18.5V22"/></svg>
+          <span id="askLabel">Ask a question</span>
+        </button>
+        <div class="chips">
+          <button class="chip" data-ask="Who has not paid me?">Who has not paid me?</button>
+          <button class="chip" data-ask="How much did I earn?">How much did I earn?</button>
+          <button class="chip" data-ask="Remind everyone who is late">Remind everyone who is late</button>
+        </div>
+        <div class="typebox">
+          <input id="askTyped" placeholder="Or type your question" aria-label="Type your question">
+          <button id="askGo">Ask</button>
+        </div>
+        <div id="answer" class="answer" hidden></div>
+        <div id="remindBox" class="panel" hidden></div>
+      </section>
 
-  <h3>Ask about my business</h3>
-  <button id="askMic" class="askbtn">🎙️ Ask a question</button>
-  <p class="hint">Try: "Who has not paid me?" · "How much did I earn?" · "Remind everyone who is late"</p>
-  <div class="typebox">
-    <input id="askTyped" placeholder="Or type your question" aria-label="Type your question">
-    <button id="askGo">Ask</button>
+      <section class="panel">
+        <h2>My bills</h2>
+        <div class="stats">
+          <div class="stat owed"><small>Still to collect</small><strong id="sumOwed">$0.00</strong></div>
+          <div class="stat got"><small>Collected</small><strong id="sumPaid">$0.00</strong></div>
+        </div>
+        <div class="tiles">
+          <button class="tile t-paid" data-b="paid" aria-pressed="false"><b id="c-paid">0</b><span>Paid</span></button>
+          <button class="tile t-waiting" data-b="waiting" aria-pressed="true"><b id="c-waiting">0</b><span>Waiting</span></button>
+          <button class="tile t-late" data-b="late" aria-pressed="false"><b id="c-late">0</b><span>Late</span></button>
+        </div>
+        <div id="list" class="list"></div>
+      </section>
+    </div>
   </div>
-  <div id="answer" class="answer" hidden></div>
-  <div id="remindBox" class="review" hidden></div>
 
-  <h3>My bills</h3>
-  <div class="tiles">
-    <button class="tile t-paid" data-b="paid" aria-pressed="false"><b id="c-paid">0</b><span>✅ Paid</span></button>
-    <button class="tile t-waiting" data-b="waiting" aria-pressed="true"><b id="c-waiting">0</b><span>⏳ Waiting</span></button>
-    <button class="tile t-late" data-b="late" aria-pressed="false"><b id="c-late">0</b><span>⚠️ Late</span></button>
-  </div>
-  <div id="list" class="list"></div>
+  <footer class="foot">Your bills are sent as PayPal invoices.</footer>
 </main>
 
 <script>
 const $ = id => document.getElementById(id);
+const el = (tag, cls, text) => { const n = document.createElement(tag); if(cls) n.className = cls; if(text != null) n.textContent = text; return n; };
+const usd = n => '$' + (+n || 0).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 let rec = null, listening = false, draft = null, bucket = 'waiting', invoices = [];
+
+const IC_OK = '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+const IC_NO = '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+const IC_DONE = '<svg class="tick" viewBox="0 0 48 48" width="52" height="52" fill="none" aria-hidden="true"><circle cx="24" cy="24" r="22" fill="rgba(255,255,255,.2)"/><path d="M14 25l7 7 13-15" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const choicesHTML = (yesId, yesLabel, yesAria, noId) =>
+  `<button class="yes" id="${yesId}" aria-label="${yesAria}">${IC_OK}<span>${yesLabel}</span></button><button class="no" id="${noId}" aria-label="Cancel">${IC_NO}<span>Cancel</span></button>`;
 
 const T = {
   'hi-IN': {
@@ -161,6 +319,10 @@ $('mic').addEventListener('click', () => {
 $('typeGo').addEventListener('click', () => { const t = $('typed').value.trim(); if(t) parseText(t); });
 $('typed').addEventListener('keydown', e => { if(e.key === 'Enter') $('typeGo').click(); });
 
+/* Example chips */
+document.querySelectorAll('[data-fill]').forEach(c => c.addEventListener('click', () => { $('typed').value = c.dataset.fill; $('typed').focus(); }));
+document.querySelectorAll('[data-ask]').forEach(c => c.addEventListener('click', () => { $('askTyped').value = c.dataset.ask; askBusiness(c.dataset.ask); }));
+
 /* ---------- Parse and review ---------- */
 async function parseText(text){
   $('done').hidden = true;
@@ -184,14 +346,11 @@ function showReview({parsed, customer, fx, warnings = []}){
 
   const box = $('review');
   box.innerHTML = '';
-  const h = document.createElement('h2');
-  h.textContent = customer ? `${customer.firstName} ${customer.lastName}` : (parsed.customer_name || 'Unknown customer');
-  box.appendChild(h);
+  box.appendChild(el('h2', '', customer ? `${customer.firstName} ${customer.lastName}` : (parsed.customer_name || 'Unknown customer')));
 
   items.forEach(i => {
-    const r = document.createElement('div'); r.className = 'row';
-    const a = document.createElement('span');
-    const b = document.createElement('span');
+    const r = el('div', 'row');
+    const a = el('span'), b = el('span');
     if(i.origPrice != null){
       a.textContent = `${i.baseName || i.name} × ${i.origQty} @ ₹${i.origPrice}`;
       b.textContent = `₹${Math.round(i.origQty*i.origPrice)} → $${((i.quantity||0)*(i.price||0)).toFixed(2)}`;
@@ -202,26 +361,22 @@ function showReview({parsed, customer, fx, warnings = []}){
     r.append(a,b); box.appendChild(r);
   });
 
-  const tot = document.createElement('div'); tot.className = 'total'; tot.textContent = `Total $${draft.total.toFixed(2)}`;
-  const due = document.createElement('div'); due.textContent = `Pay within ${parsed.due_in_days || 7} days`;
-  box.append(tot, due);
+  const tot = el('div', 'totalrow');
+  tot.append(el('span', '', 'Total'), el('strong', '', `$${draft.total.toFixed(2)}`));
+  box.append(tot, el('div', 'due', `Pay within ${parsed.due_in_days || 7} days`));
 
   if(fx){
-    const f = document.createElement('div'); f.className = 'fx';
-    f.textContent = `₹${Math.round(fx.originalTotal).toLocaleString('en-IN')} at ₹${fx.rate.toFixed(2)} per $1 (${fx.source})`;
-    box.appendChild(f);
+    box.appendChild(el('div', 'fx', `₹${Math.round(fx.originalTotal).toLocaleString('en-IN')} at ₹${fx.rate.toFixed(2)} per $1 (${fx.source})`));
   }
-  warnings.forEach(w => {
-    const x = document.createElement('div'); x.className = 'warn'; x.textContent = '⚠️ ' + w; box.appendChild(x);
-  });
+  warnings.forEach(w => box.appendChild(el('div', 'warn', w)));
 
   let problem = '';
   if(!customer) problem = 'This customer is not in your contacts. Say the name again.';
   else if(!complete) problem = 'Some details are missing. Say the items and prices again.';
-  if(problem){ const w = document.createElement('div'); w.className = 'warn'; w.textContent = problem; box.appendChild(w); }
+  if(problem) box.appendChild(el('div', 'warn', problem));
 
-  const c = document.createElement('div'); c.className = 'choices';
-  c.innerHTML = '<button class="yes" id="yes" aria-label="Send bill">✔<small>' + (warnings.length ? 'Send anyway' : 'Send') + '</small></button><button class="no" id="no" aria-label="Cancel">✘<small>Cancel</small></button>';
+  const c = el('div', 'choices');
+  c.innerHTML = choicesHTML('yes', warnings.length ? 'Send anyway' : 'Send', 'Send bill', 'no');
   box.appendChild(c);
   box.hidden = false;
 
@@ -233,9 +388,10 @@ function showReview({parsed, customer, fx, warnings = []}){
   else{
     const name = customer.firstName ? `${customer.firstName} ${customer.lastName}` : parsed.customer_name;
     const line = tr().read({name, total: draft.total, days: parsed.due_in_days || 7});
-    setStatus(warnings.length ? 'Warning! Check the bill carefully' : 'Check the bill, then tap ✔ or ✘');
+    setStatus(warnings.length ? 'Warning! Check the bill carefully' : 'Check the bill, then tap Send or Cancel');
     speak(warnings.length ? line + ' Warning. ' + warnings.join(' ') : line);
   }
+  box.scrollIntoView({behavior:'smooth', block:'nearest'});
 }
 
 /* ---------- Send ---------- */
@@ -253,15 +409,17 @@ async function sendInvoice(){
     const data = await res.json();
     if(!res.ok) throw new Error(data.error || 'Send failed');
     $('review').hidden = true;
-    $('done').textContent = `✅ Bill sent · $${data.total.toFixed(2)}`;
-    $('done').hidden = false;
+    const done = $('done');
+    done.innerHTML = IC_DONE + '<div><strong>Bill sent</strong><span></span></div>';
+    done.querySelector('span').textContent = `${usd(data.total)} sent to ${customer.firstName || 'your customer'}`;
+    done.hidden = false;
     setStatus('Tap the microphone for the next bill');
     speak(tr() === T['hi-IN'] ? 'Bill bhej diya gaya' : 'Bill sent');
     draft = null; $('typed').value = '';
     loadInvoices();
   }catch(e){
     $('yes').disabled = false;
-    setStatus('Could not send. Tap ✔ to try again');
+    setStatus('Could not send. Tap Send to try again');
     console.error(e);
   }
 }
@@ -281,34 +439,46 @@ document.querySelectorAll('.tile').forEach(t => t.addEventListener('click', () =
   renderList();
 }));
 
+const EMPTY = {
+  paid: 'No paid bills yet. They show up here as soon as a customer pays.',
+  waiting: 'Nothing is waiting. Tap the microphone to send a bill.',
+  late: 'No late bills. Everyone is on time.'
+};
+
 function renderList(){
   ['paid','waiting','late'].forEach(b => $('c-' + b).textContent = invoices.filter(i => i.bucket === b).length);
+  const sum = f => invoices.filter(f).reduce((s,i) => s + (+i.total || 0), 0);
+  $('sumOwed').textContent = usd(sum(i => i.bucket !== 'paid'));
+  $('sumPaid').textContent = usd(sum(i => i.bucket === 'paid'));
+
   const box = $('list'); box.innerHTML = '';
   const shown = invoices.filter(i => i.bucket === bucket);
-  if(!shown.length){ const e = document.createElement('div'); e.className = 'empty'; e.textContent = 'No bills here yet'; box.appendChild(e); return; }
+  if(!shown.length){ box.appendChild(el('div', 'empty', EMPTY[bucket])); return; }
+
   shown.forEach(inv => {
-    const d = document.createElement('div'); d.className = 'inv';
-    const top = document.createElement('div'); top.className = 'top';
-    const n = document.createElement('span'); n.textContent = inv.customerName;
-    const a = document.createElement('span');
-    a.textContent = `$${inv.total.toFixed(2)}${inv.inrTotal ? ' (₹' + Math.round(inv.inrTotal).toLocaleString('en-IN') + ')' : ''}`;
-    top.append(n,a);
-    const s = document.createElement('small'); s.textContent = `Due ${inv.dueDate}`;
-    d.append(top, s);
+    const d = el('div', 'inv b-' + inv.bucket);
+    const av = el('div', 'av', (inv.customerName || '?').trim().charAt(0).toUpperCase()); av.setAttribute('aria-hidden', 'true');
+    const info = el('div', 'info'); info.append(el('b', '', inv.customerName), el('small', '', `Due ${inv.dueDate}`));
+    const amt = el('div', 'amt'); amt.appendChild(el('strong', '', usd(inv.total)));
+    if(inv.inrTotal) amt.appendChild(el('small', '', '₹' + Math.round(inv.inrTotal).toLocaleString('en-IN')));
+    d.append(av, info, amt);
+
+    const acts = el('div', 'acts');
     if(inv.bucket === 'late'){
-      const b = document.createElement('button'); b.textContent = '💬 Write reminder';
+      const b = el('button', 'pill remind', 'Write reminder');
       b.onclick = () => remind(inv, d, b);
-      d.appendChild(b);
+      acts.appendChild(b);
     }
     if(inv.bucket !== 'paid'){
-      const pb = document.createElement('button'); pb.textContent = '💵 Mark as paid'; pb.style.marginLeft = '8px';
+      const pb = el('button', 'pill paid', 'Mark as paid');
       let armed = false;
       pb.onclick = () => {
-        if(!armed){ armed = true; pb.textContent = '✔ Tap again to confirm'; setTimeout(() => { armed = false; pb.textContent = '💵 Mark as paid'; }, 4000); return; }
+        if(!armed){ armed = true; pb.classList.add('armed'); pb.textContent = 'Tap again to confirm'; setTimeout(() => { armed = false; pb.classList.remove('armed'); pb.textContent = 'Mark as paid'; }, 4000); return; }
         markPaid(inv.id);
       };
-      d.appendChild(pb);
+      acts.appendChild(pb);
     }
+    if(acts.children.length) d.appendChild(acts);
     box.appendChild(d);
   });
 }
@@ -319,20 +489,19 @@ async function remind(inv, card, btn){
     const res = await fetch('/api/reminder/' + encodeURIComponent(inv.id), {method:'POST'});
     const data = await res.json();
     if(!res.ok) throw new Error(data.error);
-    const m = document.createElement('div'); m.className = 'msg'; m.textContent = data.message;
-    const sp = document.createElement('button'); sp.textContent = '🔊 Listen';
+    const m = el('div', 'msg', data.message);
+    const sp = el('button', 'pill listen', 'Listen');
     sp.onclick = () => speak(data.message);
     card.append(m, sp);
     btn.remove();
-  }catch(e){ btn.disabled = false; btn.textContent = '💬 Write reminder'; console.error(e); }
+  }catch(e){ btn.disabled = false; btn.textContent = 'Write reminder'; console.error(e); }
 }
 
 /* ---------- Ask the business ---------- */
 function showAnswer(text){
   const a = $('answer'); a.innerHTML = '';
-  const p = document.createElement('div'); p.textContent = text;
-  const b = document.createElement('button'); b.textContent = '🔊 Listen'; b.onclick = () => speak(text);
-  a.append(p, b); a.hidden = false;
+  const b = el('button', 'pill listen', 'Listen'); b.onclick = () => speak(text);
+  a.append(el('div', '', text), b); a.hidden = false;
 }
 
 async function askBusiness(text){
@@ -350,16 +519,14 @@ async function askBusiness(text){
 
 function showReminders(list){
   const box = $('remindBox'); box.innerHTML = '';
-  const h = document.createElement('h2'); h.textContent = `Send ${list.length} reminder${list.length > 1 ? 's' : ''}?`;
-  box.appendChild(h);
+  box.appendChild(el('h2', '', `Send ${list.length} reminder${list.length > 1 ? 's' : ''}?`));
   list.forEach(r => {
-    const d = document.createElement('div'); d.className = 'row';
-    const n = document.createElement('b'); n.textContent = r.customer;
-    const m = document.createElement('span'); m.textContent = r.message;
-    d.style.flexDirection = 'column'; d.append(n, m); box.appendChild(d);
+    const d = el('div', 'row');
+    d.append(el('b', '', r.customer), el('span', '', r.message));
+    box.appendChild(d);
   });
-  const c = document.createElement('div'); c.className = 'choices';
-  c.innerHTML = '<button class="yes" id="rYes" aria-label="Send reminders">✔<small>Send</small></button><button class="no" id="rNo" aria-label="Cancel">✘<small>Cancel</small></button>';
+  const c = el('div', 'choices');
+  c.innerHTML = choicesHTML('rYes', 'Send', 'Send reminders', 'rNo');
   box.appendChild(c); box.hidden = false;
   $('rNo').onclick = () => { box.hidden = true; };
   $('rYes').onclick = async () => {
@@ -369,7 +536,7 @@ function showReminders(list){
       const { results } = await res.json();
       const ok = results.filter(x => x.ok).length;
       box.hidden = true;
-      const msg = ok === results.length ? `✅ ${ok} reminder${ok > 1 ? 's' : ''} sent` : `Sent ${ok} of ${results.length}. ${results.find(x => !x.ok).error}`;
+      const msg = ok === results.length ? `${ok} reminder${ok > 1 ? 's' : ''} sent` : `Sent ${ok} of ${results.length}. ${results.find(x => !x.ok).error}`;
       showAnswer(msg); speak(ok === results.length ? 'Reminders sent' : 'Some reminders failed');
     }catch(e){ $('rYes').disabled = false; console.error(e); }
   };
@@ -380,17 +547,16 @@ async function markPaid(id){
     const res = await fetch('/api/invoice/' + encodeURIComponent(id) + '/paid', {method:'POST'});
     const data = await res.json();
     if(!res.ok) throw new Error(data.error || 'Failed');
-    showAnswer('✅ Marked as paid'); speak(tr() === T['hi-IN'] ? 'Payment darj ho gaya' : 'Marked as paid');
+    showAnswer('Marked as paid'); speak(tr() === T['hi-IN'] ? 'Payment darj ho gaya' : 'Marked as paid');
     loadInvoices();
   }catch(e){ showAnswer('Could not mark as paid. ' + e.message); console.error(e); }
 }
 
 function showPayment(p){
   const box = $('remindBox'); box.innerHTML = '';
-  const h = document.createElement('h2'); h.textContent = `Mark ${p.customer}'s $${p.total.toFixed(2)} bill as paid?`;
-  box.appendChild(h);
-  const c = document.createElement('div'); c.className = 'choices';
-  c.innerHTML = '<button class="yes" id="pYes" aria-label="Mark as paid">✔<small>Yes, paid</small></button><button class="no" id="pNo" aria-label="Cancel">✘<small>Cancel</small></button>';
+  box.appendChild(el('h2', '', `Mark ${p.customer}'s $${p.total.toFixed(2)} bill as paid?`));
+  const c = el('div', 'choices');
+  c.innerHTML = choicesHTML('pYes', 'Yes, paid', 'Mark as paid', 'pNo');
   box.appendChild(c); box.hidden = false;
   $('pNo').onclick = () => { box.hidden = true; };
   $('pYes').onclick = () => { box.hidden = true; markPaid(p.id); };
@@ -400,10 +566,10 @@ $('askMic').addEventListener('click', () => {
   if(!SR){ showAnswer('Voice needs Chrome. Please type below.'); return; }
   const r = new SR(); r.lang = $('lang').value; r.interimResults = false;
   let text = '';
-  r.onstart = () => { $('askMic').classList.add('on'); $('askMic').textContent = '🔴 Listening…'; };
+  r.onstart = () => { $('askMic').classList.add('on'); $('askLabel').textContent = 'Listening…'; };
   r.onresult = e => { text = Array.from(e.results).map(x => x[0].transcript).join(' '); };
   r.onerror = () => showAnswer('Could not hear. Tap and try again');
-  r.onend = () => { $('askMic').classList.remove('on'); $('askMic').textContent = '🎙️ Ask a question'; if(text.trim()) askBusiness(text.trim()); };
+  r.onend = () => { $('askMic').classList.remove('on'); $('askLabel').textContent = 'Ask a question'; if(text.trim()) askBusiness(text.trim()); };
   r.start();
 });
 $('askGo').addEventListener('click', () => { const t = $('askTyped').value.trim(); if(t) askBusiness(t); });
@@ -413,7 +579,7 @@ $('askTyped').addEventListener('keydown', e => { if(e.key === 'Enter') $('askGo'
 if(location.search.includes('demo=1')){
   const d = document.createElement('button');
   d.textContent = 'Demo: make latest bill late';
-  d.style.cssText = 'margin-top:24px;padding:8px 12px;border-radius:10px;border:2px dashed var(--line);background:transparent;color:var(--muted);cursor:pointer';
+  d.style.cssText = 'display:block;margin:24px auto 0;padding:8px 12px;border-radius:10px;border:2px dashed var(--line);background:transparent;color:var(--muted);cursor:pointer';
   d.onclick = async () => { await fetch('/api/demo/make-late', {method:'POST'}); loadInvoices(); };
   document.querySelector('main').appendChild(d);
 }

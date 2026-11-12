@@ -2,7 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { GoogleGenAI } from '@google/genai';
-import { createInvoice, sendInvoice, getInvoice, remindInvoice, recordPayment } from './paypal.js';
+import { createInvoice, sendInvoice, getInvoice, remindInvoice, recordPayment, listPayPalInvoices } from './paypal.js';
 
 const app = express();
 app.use(express.json());
@@ -18,6 +18,7 @@ const MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
 const FALLBACK_MODEL = process.env.GEMINI_FALLBACK_MODEL;
 const FALLBACK_RATE = Number(process.env.FALLBACK_USD_INR) || 94;
 const MAX_AMOUNT = Number(process.env.MAX_INVOICE_USD) || 500;
+const TZ = process.env.TZ_NAME || 'Asia/Kolkata';
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
@@ -161,6 +162,28 @@ function checkInvoice(contact, items, total) {
   return warnings;
 }
 
+// Sample bills so the hosted demo is never empty (Render wipes its disk on restart).
+// They are marked demo: true and are never sent to PayPal.
+function seedDemoData() {
+  const hosted = process.env.RENDER || process.env.SEED_DEMO === 'true';
+  if (sentInvoices.length || !hosted || !contacts.length) return;
+  const c = contacts[0];
+  const day = n => new Date(Date.now() + n * 86400000).toISOString().slice(0, 10);
+  const mk = (id, total, inr, due, extra = {}) => ({
+    id, customerName: customerKey(c), customerEmail: c.email, total, inrTotal: inr,
+    dueDate: due, language: 'Hindi',
+    createdAt: new Date(Date.now() - 2 * 86400000).toISOString(),
+    demo: true, ...extra,
+  });
+  sentInvoices.push(
+    mk('DEMO-1', 36.0, 3384, day(5), { paidManually: true }),
+    mk('DEMO-2', 12.5, 1175, day(4)),
+    mk('DEMO-3', 20.0, 1880, day(-3)),
+  );
+  saveInvoices();
+}
+seedDemoData();
+
 // ---------- 1. Parse spoken text ----------
 app.post('/api/parse', async (req, res) => {
   try {
@@ -268,22 +291,16 @@ app.get('/api/invoice/:id', async (req, res) => {
 // ---------- 4. Dashboard: Paid / Waiting / Late ----------
 app.get('/api/invoices', async (req, res) => {
   try {
-    const today = new Date().toISOString().slice(0, 10);
-    const list = await Promise.all(
-      sentInvoices.map(async inv => {
-        let paypalStatus = 'UNKNOWN';
-        try {
-          paypalStatus = (await getInvoice(inv.id)).status;
-        } catch (e) {
-          console.error('Status check failed for', inv.id, e.message);
-        }
-        let bucket = 'waiting';
-        if (inv.paidManually || paypalStatus === 'PAID' || paypalStatus === 'MARKED_AS_PAID') bucket = 'paid';
-        else if (inv.dueDate < today) bucket = 'late';
-        return { ...inv, paypalStatus, bucket };
-      })
-    );
-    res.json(list.reverse());
+    res.json(await listInvoices());
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/api/summary', async (req, res) => {
+  try {
+    res.json(await buildSummary(await listInvoices()));
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: e.message });
@@ -315,24 +332,116 @@ Reply with the message text only.`;
 const ASK_PROMPT = `You are the business assistant of a small shopkeeper who bills customers with PayPal invoices.
 You get the shopkeeper's question and a JSON list of their invoices (total is in USD, inr is the rupee amount if any, bucket is paid, waiting or late).
 Answer ONLY from this data. Never invent invoices or numbers. If the list is empty, say there are no bills yet.
+You also get a "summary" with money EARNED (paid bills) today, in the last 7 days and this month, plus what is waiting and late, in USD and approximate INR. For earnings questions use the summary numbers exactly and never add numbers yourself. When asked in Hindi or about rupees, include the rupee amount.
 Keep the answer to 1-3 short, simple sentences, in the language the question was asked in (Hindi, Hinglish or English). Say amounts like "36 dollars".
 If the shopkeeper asks you to remind or chase customers who are late, set action to "remind_late".
 If the shopkeeper says a customer has paid (cash, UPI or any other way), set action to "mark_paid" and "customer" to that customer's name, and answer by asking them to confirm.
 Otherwise action is "none".
 Reply with ONLY JSON: {"answer": string, "action": "none"|"remind_late"|"mark_paid", "customer": string|null}`;
 
+// ---------- PayPal sync, dashboard list and earnings summary ----------
+const todayStr = () => new Date().toLocaleDateString('en-CA', { timeZone: TZ });
+const shiftDay = (d, n) => new Date(new Date(d + 'T00:00:00Z').getTime() + n * 86400000).toISOString().slice(0, 10);
+
+function dayOf(x) {
+  if (!x) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(x)) return x;
+  const d = new Date(x);
+  return isNaN(d) ? String(x).slice(0, 10) : d.toLocaleDateString('en-CA', { timeZone: TZ });
+}
+
+function fromPayPal(r) {
+  const b = r.primary_recipients?.[0]?.billing_info || {};
+  const n = b.name || {};
+  return {
+    id: r.id,
+    customerName: `${n.given_name || ''} ${n.surname || ''}`.trim() || 'Customer',
+    customerEmail: b.email_address || '',
+    total: Number(r.amount?.value || 0),
+    inrTotal: null,
+    dueDate: r.detail?.payment_term?.due_date || r.detail?.invoice_date || '',
+    language: 'English',
+    createdAt: r.detail?.metadata?.create_time || `${r.detail?.invoice_date}T00:00:00.000Z`,
+    imported: true,
+  };
+}
+
+// Reads every invoice from PayPal and adds the ones this app does not know yet
+async function refreshFromPayPal() {
+  const raw = await listPayPalInvoices();
+  const map = new Map();
+  let changed = false;
+  for (const r of raw) {
+    map.set(r.id, r);
+    if (['DRAFT', 'CANCELLED'].includes(r.status)) continue;
+    if (!sentInvoices.some(i => i.id === r.id)) {
+      sentInvoices.push(fromPayPal(r));
+      changed = true;
+    }
+  }
+  if (changed) saveInvoices();
+  return map;
+}
+
 async function listInvoices() {
-  const today = new Date().toISOString().slice(0, 10);
-  return Promise.all(
-    sentInvoices.map(async inv => {
-      let paypalStatus = 'UNKNOWN';
-      try { paypalStatus = (await getInvoice(inv.id)).status; } catch (e) { /* keep UNKNOWN */ }
-      let bucket = 'waiting';
-      if (inv.paidManually || paypalStatus === 'PAID' || paypalStatus === 'MARKED_AS_PAID') bucket = 'paid';
-      else if (inv.dueDate < today) bucket = 'late';
-      return { ...inv, paypalStatus, bucket };
-    })
+  const today = todayStr();
+  let map = new Map();
+  try {
+    map = await refreshFromPayPal();
+  } catch (e) {
+    console.error('PayPal list failed, using saved data:', e.message);
+  }
+  const live = map.size > 0;
+
+  const out = await Promise.all(
+    sentInvoices
+      .filter(inv => !(live && inv.demo))
+      .map(async inv => {
+        let raw = map.get(inv.id);
+        let paypalStatus = raw?.status || 'UNKNOWN';
+        if (!raw && !inv.demo) {
+          try {
+            raw = await getInvoice(inv.id);
+            paypalStatus = raw.status;
+          } catch (e) {
+            console.error('Status check failed for', inv.id, e.message);
+          }
+        }
+        const total = Number(raw?.amount?.value ?? inv.total);
+        const isPaid = !!inv.paidManually || ['PAID', 'MARKED_AS_PAID'].includes(paypalStatus);
+        let bucket = 'waiting';
+        if (isPaid) bucket = 'paid';
+        else if (inv.dueDate && inv.dueDate < today) bucket = 'late';
+        const tx = (raw?.payments?.transactions || []).map(t => t.payment_date).filter(Boolean).sort().pop();
+        const paidDate = isPaid ? dayOf(tx || inv.paidAt || inv.createdAt) : null;
+        return { ...inv, total, paypalStatus, bucket, paidDate, invoiceNumber: raw?.detail?.invoice_number || null };
+      })
   );
+  return out
+    .filter(i => !['DRAFT', 'CANCELLED', 'REFUNDED', 'MARKED_AS_REFUNDED'].includes(i.paypalStatus))
+    .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+}
+
+async function buildSummary(list) {
+  const { rate } = await getUsdInr();
+  const t = todayStr();
+  const weekStart = shiftDay(t, -6);
+  const monthStart = t.slice(0, 8) + '01';
+  const paid = list.filter(i => i.bucket === 'paid' && i.paidDate);
+  const pack = arr => {
+    const usd = +arr.reduce((s, i) => s + i.total, 0).toFixed(2);
+    return { usd, inr: Math.round(usd * rate) };
+  };
+  return {
+    asOf: t,
+    earnedToday: pack(paid.filter(i => i.paidDate === t)),
+    earnedLast7Days: pack(paid.filter(i => i.paidDate >= weekStart && i.paidDate <= t)),
+    earnedThisMonth: pack(paid.filter(i => i.paidDate >= monthStart && i.paidDate <= t)),
+    earnedAllTime: pack(paid),
+    waiting: pack(list.filter(i => i.bucket === 'waiting')),
+    late: pack(list.filter(i => i.bucket === 'late')),
+    usdToInr: rate,
+  };
 }
 
 async function draftReminder(inv) {
@@ -354,11 +463,12 @@ app.post('/api/ask', async (req, res) => {
     const list = await listInvoices();
     const data = list.map(i => ({
       customer: i.customerName, total: i.total, inr: i.inrTotal,
-      bucket: i.bucket, dueDate: i.dueDate, createdAt: i.createdAt,
+      bucket: i.bucket, dueDate: i.dueDate, paidDate: i.paidDate, createdAt: i.createdAt,
     }));
+    const summary = await buildSummary(list);
 
     const response = await generate({
-      contents: `Today: ${new Date().toISOString().slice(0, 10)}\nInvoices: ${JSON.stringify(data)}\nQuestion: ${question}`,
+      contents: `Today: ${todayStr()}\nSummary: ${JSON.stringify(summary)}\nInvoices: ${JSON.stringify(data)}\nQuestion: ${question}`,
       config: { systemInstruction: ASK_PROMPT, responseMimeType: 'application/json', temperature: 0 },
     });
     const out = cleanJson(response.text);
@@ -397,7 +507,7 @@ app.post('/api/remind/send', async (req, res) => {
       continue;
     }
     try {
-      await remindInvoice(r.id, r.message);
+      if (!sentInvoices.find(i => i.id === r.id).demo) await remindInvoice(r.id, r.message);
       results.push({ id: r.id, ok: true });
     } catch (e) {
       console.error(e);
@@ -412,8 +522,9 @@ app.post('/api/invoice/:id/paid', async (req, res) => {
   try {
     const inv = sentInvoices.find(i => i.id === req.params.id);
     if (!inv) return res.status(404).json({ error: 'Invoice not found' });
-    await recordPayment(inv.id, inv.total);
+    if (!inv.demo) await recordPayment(inv.id, inv.total);
     inv.paidManually = true;
+    inv.paidAt = todayStr();
     saveInvoices();
     res.json({ ok: true });
   } catch (e) {
